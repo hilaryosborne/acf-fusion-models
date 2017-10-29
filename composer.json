@@ -1,0 +1,28 @@
+{
+    "name": "sackrin/acf-fusion-models",
+    "type": "library",
+    "description": "Extension of the ACF Fusion library to add model functionality",
+    "keywords": ["wordpress","advanced-custom-fields"],
+    "license": "MIT",
+    "config": {
+        "preferred-install": "dist"
+    },
+    "authors": [
+        {
+            "name": "Hilary Osborne",
+            "email": "h.t.osborne@gmail.com",
+            "homepage": "https://www.hilaryosborne.com",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": ">=5.6.4",
+        "anahkiasen/underscore-php" : "2.0.0",
+        "sackrin/acf-fusion": "^0.1.7"
+    },
+    "autoload": {
+        "psr-0": {
+            "ACFFusionModel": "src"
+        }
+    }
+}
