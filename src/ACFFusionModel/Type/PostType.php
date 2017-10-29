@@ -55,7 +55,7 @@ abstract class PostType extends Model {
      */
     public function getFieldsID() {
         // Retrieve the ACF fields ID
-        return $this->getID();
+        return apply_filters('fusion/model/get_fields_id', $this->getID(), $this);
     }
 
     /**
@@ -73,12 +73,12 @@ abstract class PostType extends Model {
         // This is the easiest way of retrieving an object's attributes without triggering actions
         $record = $wpdb->get_row($wpdb->prepare("SELECT * FROM $wpdb->posts WHERE ".static::$idAttrName." = %d", [$this->getID()]), ARRAY_A);
         // Apply any listening filters
-        apply_filters('fusion_load_attributes', $this, $record);
+        apply_filters('fusion/model/load_attributes', $this, $record);
         // Set the attributes with the output
         $this->attributes = $record;
         // Trigger the fusion actions
-        do_action('fusion_load_attributes', $this);
-        do_action('fusion_load_attributes_'.static::$postType, $this);
+        do_action('fusion/model/load_attributes', $this);
+        do_action('fusion/model/load_attributes_'.static::$postType, $this);
         // Return for method chaining
         return $this;
     }
@@ -95,8 +95,8 @@ abstract class PostType extends Model {
         // Retrieve the wordpress db object
         global $wpdb;
         // Trigger the fusion actions
-        do_action('fusion_pre_save_attributes', $this);
-        do_action('fusion_pre_save_attributes_'.static::$postType, $this);
+        do_action('fusion/model/pre_save_attributes', $this);
+        do_action('fusion/model/pre_save_attributes_'.static::$postType, $this);
         // If there is no post ID then create a new post
         if (!$this->getID()) {
             // Populate the post type
@@ -125,8 +125,8 @@ abstract class PostType extends Model {
             ],[static::$idAttrName => $this->getID()],['%s','%s','%s','%s','%s','%s'], ['%d']);
         }
         // Trigger the fusion actions
-        do_action('fusion_save_attributes', $this);
-        do_action('fusion_save_attributes_'.static::$postType, $this);
+        do_action('fusion/model/save_attributes', $this);
+        do_action('fusion/model/save_attributes_'.static::$postType, $this);
         // Return for method chaining
         return $this;
     }
@@ -140,16 +140,16 @@ abstract class PostType extends Model {
      */
     public function save() {
         // Trigger the fusion actions
-        do_action('fusion_pre_save', $this);
-        do_action('fusion_pre_save_'.static::$postType, $this);
+        do_action('fusion/model/pre_save', $this);
+        do_action('fusion/model/pre_save_'.static::$postType, $this);
         // Update the object
         $this->saveAttributes()
             ->saveFields();
         // Trigger the save post action
         do_action('save_post', $this->getID(), get_post($this->getID()), false);
         // Trigger the fusion actions
-        do_action('fusion_save', $this);
-        do_action('fusion_save_'.static::$postType, $this);
+        do_action('fusion/model/save', $this);
+        do_action('fusion/model/save_'.static::$postType, $this);
         // Return for method chaining
         return $this;
     }

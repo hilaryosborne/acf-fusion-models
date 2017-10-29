@@ -101,11 +101,18 @@ abstract class Model {
     public static function load($pid) {
         // Retrieve the classname
         $classname = get_called_class();
-        // Return a built instance of the model
-        return (new $classname())
-            ->setAttribute(static::$idAttrName, $pid)
-            ->loadAttributes()
+        // Create a new instance and preload
+        $instance = (new $classname())
+            ->setAttribute(static::$idAttrName, $pid);
+        // Trigger any fusion actions
+        apply_filters('fusion/model/pre_load', $instance);
+        // Load attributes and fields
+        $instance->loadAttributes()
             ->loadFields();
+        // Trigger any fusion actions
+        apply_filters('fusion/model/load', $instance);
+        // Return a built instance of the model
+        return $instance;
     }
 
     /**
@@ -117,9 +124,16 @@ abstract class Model {
     public static function create() {
         // Retrieve the current classname
         $classname = get_called_class();
+        // Create a new instance and save
+        $instance = (new $classname());
+        // Trigger any fusion actions
+        apply_filters('fusion/model/pre_create', $instance);
+        // Save the model instance
+        $instance->save();
+        // Trigger any fusion actions
+        apply_filters('fusion/model/create', $instance);
         // Return a built instance of the model
-        return (new $classname())
-            ->save();
+        return $instance;
     }
 
     /**
@@ -140,7 +154,7 @@ abstract class Model {
      */
     public function getAttributes() {
         // Return the value or return the default
-        return $this->attributes;
+        return apply_filters('fusion/model/attributes_get',$this->attributes, $this);
     }
 
     /**
@@ -153,7 +167,7 @@ abstract class Model {
         // Retrieve the value
         $value = Arrays::get($this->attributes, $path);
         // Return the value or return the default
-        return $value ? $value : $default;
+        return apply_filters('fusion/model/attribute_get', $value ? $value : $default, $this);
     }
 
     /**
@@ -165,6 +179,8 @@ abstract class Model {
      * @return $this
      */
     public function setAttribute($path, $value) {
+        // Apply any fusion filters
+        $value = apply_filters('fusion/model/attribute_set', $value, $this);
         // Set the attribute list
         $this->attributes = Arrays::set($this->attributes, $path, $value);
         // Return for method chaining
@@ -192,7 +208,7 @@ abstract class Model {
         // We can only load fields for an actual post object
         if (!$this->getID()) { throw new \Exception('No post is loaded'); }
         // Dump all of the fields in name format
-        return $this->getFieldManager()->dumpNames();
+        return apply_filters('fusion/model/dump_names', $this->getFieldManager()->dumpNames(), $this);
     }
 
     /**
@@ -206,7 +222,7 @@ abstract class Model {
         // We can only load fields for an actual post object
         if (!$this->getID()) { throw new \Exception('No post is loaded'); }
         // Dump all of the fields in key format
-        return $this->getFieldManager()->dumpKeys();
+        return apply_filters('fusion/model/dump_keys', $this->getFieldManager()->dumpKeys(), $this);
     }
 
     /**
@@ -226,7 +242,7 @@ abstract class Model {
         // We can only load fields for an actual post object
         if (!$this->getID()) { throw new \Exception('No post is loaded'); }
         // Return the value or return the default
-        return $this->getFieldManager()->getField($path, $default, $formatted);
+        return apply_filters('fusion/model/get_field', $this->getFieldManager()->getField($path, $default, $formatted), [$path, $default, $formatted], $this);
     }
 
     /**
@@ -244,6 +260,8 @@ abstract class Model {
         // If no post ID then throw an exception
         // We can only load fields for an actual post object
         if (!$this->getID()) { throw new \Exception('No post is loaded'); }
+        // Apply any fusion filters
+        $value = apply_filters('fusion/model/get_field', $value, [$path, $value], $this);
         // Sets the field with the passed value
         $this->getFieldManager()->setField($path, $value);
         // Return for method chaining
@@ -278,8 +296,12 @@ abstract class Model {
         // If no post ID then throw an exception
         // We can only load fields for an actual object
         if (!$this->getID()) { throw new \Exception('No object is loaded'); }
+        // Apply any fusion filters
+        apply_filters('fusion/model/pre_load_fields', $this);
         // Create a new fields collection and load from the database
         $this->fields = (new Manager($this->getID(), static::builder()))->load();
+        // Apply any fusion filters
+        apply_filters('fusion/model/load_fields', $this);
         // Return for method chaining
         return $this;
     }
@@ -299,8 +321,12 @@ abstract class Model {
             // Create a new fields collection
             $this->fields = (new Manager($this->getID(), static::builder()));
         }
+        // Apply any fusion filters
+        apply_filters('fusion/model/pre_save_fields', $this);
         // Trigger a field save
         $this->getFieldManager()->save();
+        // Apply any fusion filters
+        apply_filters('fusion/model/save_fields', $this);
         // Return for method chaining
         return $this;
     }
