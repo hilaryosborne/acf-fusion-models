@@ -5,21 +5,21 @@ namespace ACFFusionModel\Type;
 use ACFFusion\Manager;
 use ACFFusionModel\Model;
 
-abstract class PostType extends Model {
+abstract class TermType extends Model {
 
     /**
      * Define the column used for ID
      * Example: Post is ID, term is term_id
      * @var string
      */
-    public static $idAttrName = 'ID';
+    public static $idAttrName = 'term_id';
 
     /**
-     * Define the WP post type
+     * Define the taxonomy term slug
      * Example: page, post, example
      * @var string
      */
-    public static $postType = 'page';
+    public static $taxonomySlug = 'category';
 
     /**
      * Define the attribute defaults
@@ -27,11 +27,9 @@ abstract class PostType extends Model {
      * @var string
      */
     public static $attrDefaults = [
-        'post_title' => 'Example Page',
-        'post_content' => 'Default Page Contents',
-        'post_excerpt' => 'Default Page Contents',
-        'post_type' => 'page',
-        'post_status' => 'publish'
+        'name' => 'Default Term',
+        'slug' => 'default-term',
+        'description' => 'Default Term Description'
     ];
 
     /**
@@ -55,7 +53,7 @@ abstract class PostType extends Model {
      */
     public function getFieldsID() {
         // Retrieve the ACF fields ID
-        return apply_filters('fusion/model/get_fields_id', $this->getID(), $this);
+        return apply_filters('fusion/model/get_fields_id', static::$taxonomySlug.'_'.$this->getID(), $this);
     }
 
     /**
@@ -71,14 +69,27 @@ abstract class PostType extends Model {
         if (!$this->getID()) { return false; }
         // Query the record within the target data table
         // This is the easiest way of retrieving an object's attributes without triggering actions
-        $record = $wpdb->get_row($wpdb->prepare("SELECT * FROM $wpdb->posts WHERE ".static::$idAttrName." = %d", [$this->getID()]), ARRAY_A);
+        $term = $wpdb->get_row($wpdb->prepare("SELECT * FROM $wpdb->terms WHERE ".static::$idAttrName." = %d", [$this->getID()]), ARRAY_A);
+        // Retrieve the relationship
+        $termTaxonomy = $wpdb->get_row($wpdb->prepare("SELECT * FROM $wpdb->term_taxonomy WHERE ".static::$idAttrName." = %d AND taxonomy = %s", [$this->getID(), static::$taxonomySlug]), ARRAY_A);
+        // Prime the attributes
+        $record = [
+            'term_id' => $term['term_id'],
+            'name' => $term['name'],
+            'slug' => $term['slug'],
+            'term_group' => $term['term_group'],
+            'description' => $termTaxonomy['description'],
+            'term_taxonomy_id' => $termTaxonomy['term_taxonomy_id'],
+            'parent' => $termTaxonomy['parent'],
+            'count' => $termTaxonomy['count'],
+        ];
         // Apply any listening filters
         apply_filters('fusion/model/load_attributes', $this, $record);
         // Set the attributes with the output
         $this->attributes = $record;
         // Trigger the fusion actions
         do_action('fusion/model/load_attributes', $this);
-        do_action('fusion/model/load_attributes_'.static::$postType, $this);
+        do_action('fusion/model/load_attributes_'.static::$taxonomySlug, $this);
         // Return for method chaining
         return $this;
     }
@@ -96,37 +107,37 @@ abstract class PostType extends Model {
         global $wpdb;
         // Trigger the fusion actions
         do_action('fusion/model/pre_save_attributes', $this);
-        do_action('fusion/model/pre_save_attributes_'.static::$postType, $this);
+        do_action('fusion/model/pre_save_attributes_'.static::$taxonomySlug, $this);
         // If there is no post ID then create a new post
         if (!$this->getID()) {
             // Populate the post type
             $this->attributes = array_merge((array)static::$attrDefaults, $this->attributes);
-            // Update post fields
-            $pid = wp_insert_post($this->attributes, true);
+            // Insert the term
+            $result = wp_insert_term($this->attributes['name'], static::$taxonomySlug, $this->attributes);
             // If the result was a WordPress error object
-            if (is_object($pid)) {
+            if (!is_array($result) || !$result['term_id']) {
                 // Throw an exception reporting the error
                 throw new \Exception('There was an error inserting this post');
             }
             // Update the post ID
-            $this->setAttribute(static::$idAttrName, $pid);
+            $this->setAttribute(static::$idAttrName, $result['term_id']);
             // Load any attributes
             $this->loadAttributes();
         } // Otherwise if this is an existing object
         else {
-            // We do this directly as to not trigger a save_post action
-            $wpdb->update($wpdb->posts,[
-                'post_content' => $this->attributes['post_content'],
-                'post_title' => $this->attributes['post_title'],
-                'post_name' => $this->attributes['post_name'],
-                'post_excerpt' => $this->attributes['post_excerpt'],
-                'post_status' => $this->attributes['post_status'],
-                'post_type' => $this->attributes['post_type'],
-            ],[static::$idAttrName => $this->getID()],['%s','%s','%s','%s','%s','%s'], ['%d']);
+            // Update the term table
+            $wpdb->update($wpdb->terms,[
+                'name' => $this->attributes['name'],
+                'slug' => $this->attributes['slug']
+            ],[static::$idAttrName => $this->getID()],['%s','%s'], ['%d']);
+            // Update the term taxonomy relationship table
+            $wpdb->update($wpdb->term_taxonomy,[
+                'description' => $this->attributes['description']
+            ],['taxonomy' => static::$taxonomySlug, static::$idAttrName => $this->getID()],['%s'], ['%s','%d']);
         }
         // Trigger the fusion actions
         do_action('fusion/model/save_attributes', $this);
-        do_action('fusion/model/save_attributes_'.static::$postType, $this);
+        do_action('fusion/model/save_attributes_'.static::$taxonomySlug, $this);
         // Return for method chaining
         return $this;
     }
@@ -141,17 +152,17 @@ abstract class PostType extends Model {
     public function save() {
         // Trigger the fusion actions
         do_action('fusion/model/pre_save', $this);
-        do_action('fusion/model/pre_save_'.static::$postType, $this);
+        do_action('fusion/model/pre_save_'.static::$taxonomySlug, $this);
         // Update the object
         $this->saveAttributes()
             ->saveFields();
         // Update the ghost flag
         $this->isGhost = false;
         // Trigger the save post action
-        do_action('save_post', $this->getID(), get_post($this->getID()), false);
+        // do_action('save_post', $this->getID(), get_post($this->getID()), false);
         // Trigger the fusion actions
         do_action('fusion/model/save', $this);
-        do_action('fusion/model/save_'.static::$postType, $this);
+        do_action('fusion/model/save_'.static::$taxonomySlug, $this);
         // Return for method chaining
         return $this;
     }
