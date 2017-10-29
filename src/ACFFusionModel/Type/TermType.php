@@ -159,7 +159,8 @@ abstract class TermType extends Model {
         // Update the ghost flag
         $this->isGhost = false;
         // Trigger the save post action
-        // do_action('save_post', $this->getID(), get_post($this->getID()), false);
+        do_action('edited_term', $this->getID(), $this->getAttribute('term_taxonomy_id'), $this->getAttributes());
+        do_action('edited_'.static::$taxonomySlug, $this->getID(), $this->getAttribute('term_taxonomy_id'));
         // Trigger the fusion actions
         do_action('fusion/model/save', $this);
         do_action('fusion/model/save_'.static::$taxonomySlug, $this);
