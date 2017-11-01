@@ -114,12 +114,12 @@ abstract class Model {
         // Set the ghost flag
         $instance->isGhost = false;
         // Trigger any fusion actions
-        apply_filters('fusion/model/pre_load', $instance);
+        do_action('fusion/model/pre_load', $instance);
         // Load attributes and fields
         $instance->loadAttributes()
             ->loadFields();
-        // Trigger any fusion actions
-        apply_filters('fusion/model/load', $instance);
+        // Trigger any fusion action s
+        do_action('fusion/model/load', $instance);
         // Return a built instance of the model
         return $instance;
     }
@@ -140,11 +140,11 @@ abstract class Model {
         // If we are injecting values
         $instance->attributes = is_array($inject) ? $inject : [] ;
         // Trigger any fusion actions
-        apply_filters('fusion/model/pre_create', $instance);
+        do_action('fusion/model/pre_create', $instance);
         // Save the model instance
         $instance->save();
         // Trigger any fusion actions
-        apply_filters('fusion/model/create', $instance);
+        do_action('fusion/model/create', $instance);
         // Return a built instance of the model
         return $instance;
     }
@@ -168,7 +168,7 @@ abstract class Model {
         // Set the ghost flag
         $instance->isGhost = true;
         // Trigger any fusion actions
-        apply_filters('fusion/model/pre_ghost', $instance, $attributes, $fields);
+        do_action('fusion/model/pre_ghost', $instance, $attributes, $fields);
         // If we are injecting values
         $instance->attributes = $attributes ;
         // Do a quick check to make sure an ID was passed
@@ -177,7 +177,7 @@ abstract class Model {
         // Values should be injected in KEY format
         $instance->fields = (new Manager($instance->getFieldsID(), static::builder()))->inject($fields);
         // Trigger any fusion actions
-        apply_filters('fusion/model/ghost', $instance);
+        do_action('fusion/model/ghost', $instance);
         // Return a built instance of the model
         return $instance;
     }
@@ -307,7 +307,7 @@ abstract class Model {
         // We can only load fields for an actual post object
         if (!$this->getID()) { throw new \Exception('No object is loaded'); }
         // Apply any fusion filters
-        $value = apply_filters('fusion/model/get_field', $value, [$path, $value], $this);
+        //$value = apply_filters('fusion/model/get_field', $value, [$path, $value], $this);
         // Sets the field with the passed value
         $this->getFieldManager()->setField($path, $value);
         // Return for method chaining
@@ -343,11 +343,11 @@ abstract class Model {
         // We can only load fields for an actual object
         if (!$this->getID()) { throw new \Exception('No object is loaded'); }
         // Apply any fusion filters
-        apply_filters('fusion/model/pre_load_fields', $this);
+        do_action('fusion/model/pre_load_fields', $this);
         // Create a new fields collection and load from the database
         $this->fields = (new Manager($this->getFieldsID(), static::builder()))->load();
         // Apply any fusion filters
-        apply_filters('fusion/model/load_fields', $this);
+        do_action('fusion/model/load_fields', $this);
         // Return for method chaining
         return $this;
     }
@@ -368,11 +368,11 @@ abstract class Model {
             $this->fields = (new Manager($this->getFieldsID(), static::builder()));
         }
         // Apply any fusion filters
-        apply_filters('fusion/model/pre_save_fields', $this);
+        do_action('fusion/model/pre_save_fields', $this);
         // Trigger a field save
         $this->getFieldManager()->save();
         // Apply any fusion filters
-        apply_filters('fusion/model/save_fields', $this);
+        do_action('fusion/model/save_fields', $this);
         // Return for method chaining
         return $this;
     }

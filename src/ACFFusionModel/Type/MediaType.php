@@ -76,7 +76,7 @@ abstract class MediaType extends Model {
         // This is the easiest way of retrieving an object's attributes without triggering actions
         $record = $wpdb->get_row($wpdb->prepare("SELECT * FROM $wpdb->posts WHERE ".static::$idAttrName." = %d", [$this->getID()]), ARRAY_A);
         // Apply any listening filters
-        apply_filters('fusion/model/load_attributes', $this, $record);
+        do_action('fusion/model/load_attributes', $this, $record);
         // Set the attributes with the output
         $this->attributes = $record;
         // Trigger the fusion actions

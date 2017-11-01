@@ -84,7 +84,7 @@ abstract class TermType extends Model {
             'count' => $termTaxonomy['count'],
         ];
         // Apply any listening filters
-        apply_filters('fusion/model/load_attributes', $this, $record);
+        do_action('fusion/model/load_attributes', $this, $record);
         // Set the attributes with the output
         $this->attributes = $record;
         // Trigger the fusion actions

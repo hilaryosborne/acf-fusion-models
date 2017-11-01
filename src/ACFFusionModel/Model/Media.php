@@ -4,6 +4,13 @@ namespace ACFFusionModel\Model;
 
 use ACFFusionModel\Type\MediaType;
 
+use ACFFusion\Manager;
+use ACFFusion\Builder;
+use ACFFusion\FieldGroup;
+use ACFFusion\Field\Text;
+use ACFFusion\Field\Tab;
+use ACFFusion\Field\Textarea;
+
 class Media extends MediaType {
 
     public static $post_defaults = [
