@@ -66,7 +66,7 @@ abstract class PostType extends Model {
         // Register the post type (if required)
         if (is_array(static::$postConfiguration)) {
             // Run the wordpress register post type action
-            register_post_type(static::$postConfiguration,static::$postConfiguration);
+            register_post_type(static::$postType,static::$postConfiguration);
         }
     }
 
