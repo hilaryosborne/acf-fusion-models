@@ -22,6 +22,13 @@ abstract class PostType extends Model {
     public static $postType = 'page';
 
     /**
+     * Define the post type configuration
+     * Used when registering this post type within wordpress
+     * @var string
+     */
+    public static $postConfiguration = false;
+
+    /**
      * Define the attribute defaults
      * Could be used in extensions of this class
      * @var string
@@ -47,6 +54,21 @@ abstract class PostType extends Model {
      * @return mixed
      */
     abstract public static function builder();
+
+    /**
+     * INIT
+     * Sets up required model hooks
+     * Should be called in WP init or earlier
+     */
+    public static function init() {
+        // Register field groups
+        parent::init();
+        // Register the post type (if required)
+        if (is_array(static::$postConfiguration)) {
+            // Run the wordpress register post type action
+            register_post_type(static::$postConfiguration,static::$postConfiguration);
+        }
+    }
 
     /**
      * Returns the expected ID for ACF.
